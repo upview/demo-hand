@@ -1,0 +1,221 @@
+name: Banc de Test Main
+version: 0.1.0
+description: Test de production pour l'assemblage de la main Mirokai
+
+plugs:
+  all: []
+  each:
+  - name: EtherCAT
+    python:
+      module: plugs.python.ethercat
+      class: EtherCATManager
+    description: Contrôleur EtherCAT pour piloter les moteurs de la main via HAL
+    config:
+      hal_path: ./install/bin/legend_hal
+      interface_speed: 100
+      config_path: /opt/ressources/config/hal_ethercat.yaml
+      expected_slaves: 3
+      broker_path: ./install/bin/legend_broker
+      slaveinfo_path: ~/soem_tools/build/test/linux/slaveinfo/slaveinfo
+      hal_ready_keyword: hand.fingers_transmission Transmission is calibrated and ready
+      broker_ready_keyword: Ready, socket connected
+      work_dir: /opt/ressources
+
+setup:
+  all: []
+  each:
+  - name: Initialiser EtherCAT
+    python:
+      module: initialize_ethercat
+      function: initialize_ethercat
+    description: Détection de l'interface EtherCAT et démarrage des services broker/HAL
+    ui:
+      components:
+      - type: text_input
+        key: component_duplicate
+        label: Interface EtherCAT
+    plugs:
+    - EtherCAT
+
+phases:
+- name: Contrôle Moteurs Doigts
+  python:
+    module: inspect_finger_motors
+    function: inspect_finger_motors
+  description: Vérification visuelle du mouvement des doigts
+  measurements:
+  - name: fingers_ok
+    validators:
+    - level: critical
+      operator: ==
+      expected_value: true
+    description: Les doigts se déplacent correctement
+  ui:
+    components:
+    - type: switch
+      key: fingers_ok
+      label: Mouvement des doigts OK
+      description: Les doigts se déplacent-ils correctement ?
+      bind: measurements.fingers_ok
+      options:
+      - value: 'true'
+        label: Oui
+      - value: 'false'
+        label: Non
+  plugs:
+  - EtherCAT
+- name: Contrôle Moteur Pouce
+  python:
+    module: inspect_thumb_motor
+    function: inspect_thumb_motor
+  description: Vérification visuelle du mouvement du pouce
+  measurements:
+  - name: thumb_ok
+    validators:
+    - level: critical
+      operator: ==
+      expected_value: true
+    description: Le pouce se déplace correctement
+  ui:
+    components:
+    - type: switch
+      key: thumb_ok
+      label: Mouvement du pouce OK
+      description: Le pouce se déplace-t-il correctement ?
+      required: true
+      bind: measurements.thumb_ok
+      options:
+      - value: 'true'
+        label: Oui
+      - value: 'false'
+        label: Non
+  plugs:
+  - EtherCAT
+- name: Test Capteurs Hall
+  python:
+    module: check_hall_sensors
+    function: check_hall_sensors
+  description: Validation des capteurs à effet Hall avec et sans poignée
+  measurements:
+  - name: top_magnetic_field_delta_x
+    unit: T
+    validators:
+    - level: critical
+      operator: '>='
+      expected_value: 0.01
+    description: Capteur haut - Variation champ magnétique axe X avec poignée
+  - name: top_magnetic_field_delta_y
+    unit: T
+    validators:
+    - level: critical
+      operator: '>='
+      expected_value: 0.01
+    description: Capteur haut - Variation champ magnétique axe Y avec poignée
+  - name: top_magnetic_field_delta_z
+    unit: T
+    validators:
+    - level: critical
+      operator: '>='
+      expected_value: 0.01
+    description: Capteur haut - Variation champ magnétique axe Z avec poignée
+  - name: top_check_order_x
+    unit: T
+    validators:
+    - level: critical
+      operator: '>='
+      expected_value: 0.0
+    description: Capteur haut - Augmentation champ magnétique axe X
+  - name: top_check_order_y
+    unit: T
+    validators:
+    - level: critical
+      operator: '>='
+      expected_value: 0.0
+    description: Capteur haut - Augmentation champ magnétique axe Y
+  - name: top_check_order_z
+    unit: T
+    validators:
+    - level: critical
+      operator: '>='
+      expected_value: 0.0
+    description: Capteur haut - Augmentation champ magnétique axe Z
+  - name: bot_magnetic_field_delta_x
+    unit: T
+    validators:
+    - level: critical
+      operator: '>='
+      expected_value: 0.01
+    description: Capteur bas - Variation champ magnétique axe X avec poignée
+  - name: bot_magnetic_field_delta_y
+    unit: T
+    validators:
+    - level: critical
+      operator: '>='
+      expected_value: 0.01
+    description: Capteur bas - Variation champ magnétique axe Y avec poignée
+  - name: bot_magnetic_field_delta_z
+    unit: T
+    validators:
+    - level: critical
+      operator: '>='
+      expected_value: 0.01
+    description: Capteur bas - Variation champ magnétique axe Z avec poignée
+  - name: bot_check_order_x
+    unit: T
+    validators:
+    - level: critical
+      operator: '>='
+      expected_value: 0.0
+    description: Capteur bas - Augmentation champ magnétique axe X
+  - name: bot_check_order_y
+    unit: T
+    validators:
+    - level: critical
+      operator: '>='
+      expected_value: 0.0
+    description: Capteur bas - Augmentation champ magnétique axe Y
+  - name: bot_check_order_z
+    unit: T
+    validators:
+    - level: critical
+      operator: '>='
+      expected_value: 0.0
+    description: Capteur bas - Augmentation champ magnétique axe Z
+  plugs:
+  - EtherCAT
+- name: Test Capteurs Proximité
+  python:
+    module: check_proximity_sensors
+    function: check_proximity_sensors
+  description: Validation des capteurs de proximité avec et sans poignée
+  measurements:
+  - name: top_force_delta
+    unit: lux
+    validators:
+    - level: critical
+      operator: '>='
+      expected_value: 1800.0
+    description: Capteur haut - Variation intensité lumineuse (force) avec poignée saisie
+  - name: top_check_order
+    unit: lux
+    validators:
+    - level: critical
+      operator: '>='
+      expected_value: 0.0
+    description: Capteur haut - Diminution intensité lumineuse avec poignée
+  - name: bot_force_delta
+    unit: lux
+    validators:
+    - level: critical
+      operator: '>='
+      expected_value: 1800.0
+    description: Capteur bas - Variation intensité lumineuse (force) avec poignée saisie
+  - name: bot_check_order
+    unit: lux
+    validators:
+    - level: critical
+      operator: '>='
+      expected_value: 0.0
+    description: Capteur bas - Diminution intensité lumineuse avec poignée
+  plugs:
+  - EtherCAT
