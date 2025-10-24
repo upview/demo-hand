@@ -1,11 +1,12 @@
-import os
-import sys
-
 try:
-    from job_worker import PhaseResult
+    from tofupilot_types import PhaseResult
 except ImportError:
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "src-tauri", "python"))
-    from job_worker import PhaseResult
+    class PhaseResult:
+        CONTINUE = "CONTINUE"
+        RETRY = "RETRY"
+        SKIP = "SKIP"
+        STOP = "STOP"
+        FAIL = "FAIL"
 
 
 def check_hall_sensors(measurements, ethercat):
