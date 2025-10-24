@@ -5,7 +5,6 @@ import random
 
 class EtherCATManager:
     def __init__(self, config):
-        time.sleep(2)
         self.config = config
         self.interface = None
         self.slave_count = 0
